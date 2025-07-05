@@ -19,8 +19,8 @@ interface AuthState {
 const initialState: AuthState = {
   user: null,
   token: localStorage.getItem('token'),
-  isAuthenticated: !!localStorage.getItem('token'),
-  loading: false,
+  isAuthenticated: false, // Changed: Don't assume authenticated until user is loaded
+  loading: !!localStorage.getItem('token'), // Start loading if token exists
   error: null,
 };
 
@@ -48,6 +48,41 @@ export const loginUser = createAsyncThunk(
   }
 );
 
+// This is the missing export that's causing your error
+export const fetchUserProfile = createAsyncThunk(
+  'auth/fetchProfile',
+  async (_, { rejectWithValue, getState }) => {
+    try {
+      const { auth } = getState() as any;
+      const token = auth.token || localStorage.getItem('token');
+      
+      if (!token) {
+        return rejectWithValue('No token available');
+      }
+
+      const response = await fetch('/api/auth/profile', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        // If token is invalid, clear it
+        localStorage.removeItem('token');
+        return rejectWithValue(data.error || 'Failed to fetch profile');
+      }
+      
+      return data.data;
+    } catch (error: any) {
+      localStorage.removeItem('token');
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 const authSlice = createSlice({
   name: 'auth',
   initialState,
@@ -57,14 +92,26 @@ const authSlice = createSlice({
       state.user = null;
       state.token = null;
       state.isAuthenticated = false;
+      state.loading = false;
       state.error = null;
     },
     clearError: (state) => {
       state.error = null;
     },
+    // New: Action to initialize auth state
+    initializeAuth: (state) => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        state.token = token;
+        state.loading = true;
+      } else {
+        state.loading = false;
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
+      // Login user
       .addCase(loginUser.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -79,9 +126,28 @@ const authSlice = createSlice({
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+        state.isAuthenticated = false;
+      })
+      // Fetch user profile
+      .addCase(fetchUserProfile.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchUserProfile.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload;
+        state.isAuthenticated = true;
+        state.error = null;
+      })
+      .addCase(fetchUserProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+        state.isAuthenticated = false;
+        state.token = null;
+        state.user = null;
       });
   },
 });
 
-export const { logout, clearError } = authSlice.actions;
+export const { logout, clearError, initializeAuth } = authSlice.actions;
 export default authSlice.reducer;

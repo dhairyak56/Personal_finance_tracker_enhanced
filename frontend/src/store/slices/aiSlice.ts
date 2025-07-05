@@ -27,6 +27,7 @@ const initialState: AIState = {
   error: null,
 };
 
+// Make sure these export names match what you're importing
 export const fetchAIInsights = createAsyncThunk(
   'ai/fetchInsights',
   async (_, { rejectWithValue, getState }) => {
