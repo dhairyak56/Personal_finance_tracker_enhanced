@@ -48,6 +48,7 @@ import { logout } from '../store/slices/authSlice';
 import { fetchAIInsights, fetchAIPrediction } from '../store/slices/aiSlice';
 import { fetchTransactions } from '../store/slices/transactionSlice';
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Receipt } from '@mui/icons-material';
 
 // Mock data for charts
 const monthlyData = [
@@ -692,14 +693,14 @@ export default function DashboardPage() {
       <Container maxWidth="xl" sx={{ mt: -4, mb: 4, position: 'relative', zIndex: 1 }}>
         <Grid container spacing={3}>
           {/* Key Metrics */}
-          <Grid item xs={12} sm={6} lg={3}>
+          <Grid xs={12} sm={6} lg={3}>
             <MetricCard
               title="Current Balance"
               value={`$${(10000 - totalSpending).toLocaleString()}`}
               subtitle="Available funds"
               icon={<AccountBalanceWallet />}
               trend="up"
-              trendValue="10%"
+              trendValue="12%"
               delay={0}
             />
           </Grid>
@@ -723,7 +724,7 @@ export default function DashboardPage() {
               subtitle={`${transactions.length} transactions`}
               icon={<AttachMoney />}
               trend="down"
-              trendValue="1%"
+              trendValue="5%"
               delay={200}
             />
           </Grid>
@@ -826,15 +827,25 @@ export default function DashboardPage() {
                         borderRadius: 3,
                       }}
                     >
-                    <Insights sx={{ fontSize: 64, color: theme.palette.primary.main, mb: 2 }} />
-                      <Typography variant="h6" color="text.primary" gutterBottom>
-                        No insights available
+                      <Insights sx={{ fontSize: 64, color: theme.palette.primary.main, mb: 2 }} />
+                      <Typography variant="h5" gutterBottom fontWeight="600">
+                        No Insights Yet
                       </Typography>
-                      <Typography variant="body2" color="text.secondary" mb={3}>
-                        Add transactions to unlock AI-driven financial insights.
+                      <Typography variant="body1" color="text.secondary" sx={{ mb: 3, maxWidth: 400, mx: 'auto' }}>
+                        Start tracking your expenses to receive personalized financial insights and recommendations
                       </Typography>
-                      <Button variant="contained" onClick={() => navigate('/transactions')}>
-                        Add Transaction
+                      <Button 
+                        variant="contained" 
+                        size="large"
+                        startIcon={<Add />}
+                        onClick={() => navigate('/transactions')}
+                        sx={{
+                          background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
+                          px: 4,
+                          py: 1.5,
+                        }}
+                      >
+                        Add Your First Transaction
                       </Button>
                     </Box>
                   )}
@@ -843,38 +854,200 @@ export default function DashboardPage() {
             </Fade>
           </Grid>
 
-          {/* Recent Transactions */}
+          {/* Quick Actions & Recent Activity */}
           <Grid item xs={12} lg={4}>
-            <Fade in timeout={1600}>
-              <Card elevation={3}>
-                <CardContent>
-                  <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
-                    <Typography variant="h6" fontWeight="600">
-                      Recent Transactions
+            <Stack spacing={3}>
+              <Fade in timeout={1600}>
+                <Card elevation={3}>
+                  <CardContent sx={{ p: 3 }}>
+                    <Typography variant="h6" fontWeight="600" gutterBottom>
+                      Quick Actions
                     </Typography>
-                    <Button size="small" onClick={() => navigate('/transactions')}>
-                      View All
-                    </Button>
-                  </Box>
-                  {transactions.slice(0, 5).map((t) => (
-                    <Box key={t.id} display="flex" justifyContent="space-between" py={1}>
-                      <Typography variant="body2">{t.description}</Typography>
-                      <Typography variant="body2" fontWeight="bold">
-                        ${Number(t.amount).toLocaleString()}
-                      </Typography>
+                    <Stack spacing={2}>
+                      <Button
+                        variant="outlined"
+                        fullWidth
+                        startIcon={<Add />}
+                        onClick={() => navigate('/transactions')}
+                        sx={{
+                          borderRadius: 2,
+                          py: 1.5,
+                          borderColor: theme.palette.divider,
+                          '&:hover': {
+                            borderColor: theme.palette.primary.main,
+                            bgcolor: alpha(theme.palette.primary.main, 0.04),
+                          },
+                        }}
+                      >
+                        Add Transaction
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        fullWidth
+                        startIcon={<Analytics />}
+                        onClick={() => navigate('/transactions')}
+                        sx={{
+                          borderRadius: 2,
+                          py: 1.5,
+                          borderColor: theme.palette.divider,
+                          '&:hover': {
+                            borderColor: theme.palette.primary.main,
+                            bgcolor: alpha(theme.palette.primary.main, 0.04),
+                          },
+                        }}
+                      >
+                        View All Transactions
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        fullWidth
+                        startIcon={<Refresh />}
+                        onClick={handleRefreshData}
+                        disabled={loading}
+                        sx={{
+                          borderRadius: 2,
+                          py: 1.5,
+                          borderColor: theme.palette.divider,
+                          '&:hover': {
+                            borderColor: theme.palette.primary.main,
+                            bgcolor: alpha(theme.palette.primary.main, 0.04),
+                          },
+                        }}
+                      >
+                        Refresh Insights
+                      </Button>
+                    </Stack>
+                  </CardContent>
+                </Card>
+              </Fade>
+
+              <Fade in timeout={1800}>
+                <Card elevation={3}>
+                  <CardContent sx={{ p: 3 }}>
+                    <Typography variant="h6" fontWeight="600" gutterBottom>
+                      Recent Activity
+                    </Typography>
+                    {transactions.slice(0, 5).map((transaction, index) => (
+                      <Box 
+                        key={transaction.id}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          py: 1.5,
+                          borderBottom: index < 4 ? `1px solid ${theme.palette.divider}` : 'none',
+                        }}
+                      >
+                        <Box display="flex" alignItems="center" gap={2}>
+                          <Avatar
+                            sx={{
+                              width: 36,
+                              height: 36,
+                              bgcolor: alpha(getCategoryColor(transaction.category), 0.1),
+                              color: getCategoryColor(transaction.category),
+                            }}
+                          >
+                            <Receipt sx={{ fontSize: 18 }} />
+                          </Avatar>
+                          <Box>
+                            <Typography variant="body2" fontWeight="500">
+                              {transaction.description || transaction.category}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {new Date(transaction.date).toLocaleDateString()}
+                            </Typography>
+                          </Box>
+                        </Box>
+                        <Typography variant="body2" fontWeight="600">
+                          ${transaction.amount}
+                        </Typography>
+                      </Box>
+                    ))}
+                    {transactions.length === 0 && (
+                      <Box textAlign="center" py={3}>
+                        <Typography variant="body2" color="text.secondary">
+                          No recent transactions
+                        </Typography>
+                      </Box>
+                    )}
+                  </CardContent>
+                </Card>
+              </Fade>
+
+              <Fade in timeout={2000}>
+                <Card elevation={3}>
+                  <CardContent sx={{ p: 3 }}>
+                    <Typography variant="h6" fontWeight="600" gutterBottom>
+                      Financial Health Score
+                    </Typography>
+                    <Box sx={{ position: 'relative', display: 'inline-flex', width: '100%', justifyContent: 'center', my: 2 }}>
+                      <CircularProgress
+                        variant="determinate"
+                        value={75}
+                        size={120}
+                        thickness={4}
+                        sx={{
+                          color: theme.palette.primary.main,
+                          '& .MuiCircularProgress-circle': {
+                            strokeLinecap: 'round',
+                          },
+                        }}
+                      />
+                      <Box
+                        sx={{
+                          top: 0,
+                          left: 0,
+                          bottom: 0,
+                          right: 0,
+                          position: 'absolute',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Typography variant="h4" component="div" fontWeight="bold">
+                          75
+                        </Typography>
+                      </Box>
                     </Box>
-                  ))}
-                  {transactions.length === 0 && (
-                    <Typography variant="body2" color="text.secondary">
-                      No transactions yet. Add one to get started!
-                    </Typography>
-                  )}
-                </CardContent>
-              </Card>
-            </Fade>
+                    <Stack spacing={1}>
+                      <Box display="flex" justifyContent="space-between" alignItems="center">
+                        <Typography variant="body2">Budget Adherence</Typography>
+                        <Chip label="Good" size="small" color="success" />
+                      </Box>
+                      <Box display="flex" justifyContent="space-between" alignItems="center">
+                        <Typography variant="body2">Savings Rate</Typography>
+                        <Chip label="Excellent" size="small" color="primary" />
+                      </Box>
+                      <Box display="flex" justifyContent="space-between" alignItems="center">
+                        <Typography variant="body2">Spending Habits</Typography>
+                        <Chip label="Improving" size="small" color="warning" />
+                      </Box>
+                    </Stack>
+                  </CardContent>
+                </Card>
+              </Fade>
+            </Stack>
           </Grid>
         </Grid>
       </Container>
     </Box>
   );
+}
+
+// Helper function for category colors
+function getCategoryColor(category: string): string {
+  const colors: Record<string, string> = {
+    'Food & Dining': '#FF6B6B',
+    'Transportation': '#4ECDC4',
+    'Shopping': '#45B7D1',
+    'Entertainment': '#AB47BC',
+    'Bills & Utilities': '#FFA726',
+    'Healthcare': '#66BB6A',
+    'Education': '#42A5F5',
+    'Travel': '#EF5350',
+    'Groceries': '#26A69A',
+    'Other': '#BDBDBD',
+  };
+  return colors[category] || '#BDBDBD';
 }
